@@ -76,8 +76,23 @@ PDF Factory addresses the need for a reliable, flexible tool to convert Markdown
 ┌─────────────────────────────────────────────────────────────┐
 │                    Command Router                            │
 │  (Routes commands to appropriate handlers)                   │
-└───────────────────────┬─────────────────────────────────────┘
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  No arguments? → Launch Interactive Mode             │   │
+│  └──────────────────────────────────────────────────────┘   │
+└───────┬───────────────────────────────┬─────────────────────┘
+        │                               │
+        ▼                               ▼
+┌──────────────────┐          ┌──────────────────┐
+│  Interactive CLI │          │  Command Handler │
+│  (Guided prompts)│          │  (Direct exec)   │
+│                  │          │                  │
+│  Collects user   │          │  Uses provided   │
+│  input via menus │          │  arguments       │
+└────────┬─────────┘          └────────┬─────────┘
+         │                              │
+         └──────────────┬───────────────┘
                         │
+                        ▼
         ┌───────────────┴───────────────┐
         │                               │
         ▼                               ▼
@@ -115,8 +130,14 @@ PDF Factory addresses the need for a reliable, flexible tool to convert Markdown
 
 ### Component Layers
 
-1. **Presentation Layer**: CLI interface and user interaction
+1. **Presentation Layer**: CLI interface, interactive prompts, and user interaction
+   - Command-line argument parsing
+   - Interactive mode with arrow key navigation
+   - User input collection and validation
 2. **Application Layer**: Command routing, orchestration, and business logic
+   - Route commands to appropriate handlers
+   - Interactive workflow orchestration
+   - Settings collection and validation
 3. **Processing Layer**: Markdown parsing, template rendering, and content transformation
 4. **Generation Layer**: PDF creation using headless browser
 5. **I/O Layer**: File system operations and output management
@@ -132,9 +153,11 @@ PDF Factory addresses the need for a reliable, flexible tool to convert Markdown
 - Validate input parameters
 - Display help and usage information
 - Handle user errors gracefully
+- Route to interactive mode when no arguments provided
 
 **Commands**:
 ```typescript
+pdf-factory                    // Launches interactive mode
 pdf-factory build <input> [options]
 pdf-factory build-dir <directory> [options]
 pdf-factory init [template-name]
@@ -147,6 +170,51 @@ pdf-factory list-templates
 - `--config, -c`: Configuration file path
 - `--verbose, -v`: Verbose output
 - `--watch, -w`: Watch mode for development
+- `--interactive, -i`: Force interactive mode
+
+**Interactive Mode**:
+- Automatically invoked when no commands/arguments provided
+- See [Interactive Mode](#interactive-mode) section for detailed design
+
+### 1a. Interactive CLI (`src/cli/interactive/interactive-cli.ts`)
+
+**Responsibilities**:
+- Provide interactive user interface with arrow key navigation
+- Guide users through PDF generation workflow
+- Collect user input via prompts and menus
+- Validate inputs in real-time
+- Display progress and results
+
+**Interface**:
+```typescript
+interface InteractiveCLI {
+  start(): Promise<void>;
+  showMainMenu(): Promise<MainMenuOption>;
+  promptForFile(): Promise<string>;
+  promptForDirectory(): Promise<string>;
+  promptForOutput(defaultPath: string): Promise<string>;
+  selectTemplate(): Promise<string>;
+  promptForOptions(): Promise<BuildOptions>;
+  confirmSettings(settings: BuildSettings): Promise<boolean>;
+  showProgress(message: string): void;
+  showSuccess(message: string, filePath?: string): void;
+  showError(error: Error): void;
+}
+```
+
+**Dependencies**:
+- `inquirer` or `prompts`: Interactive prompt library
+- `inquirer-file-tree-selection-prompt`: File browser component
+- `chalk` or `colors`: Terminal colors and styling
+- `ora`: Spinner and progress indicators
+
+**Key Features**:
+- Arrow key navigation for menus
+- File/directory browser with tree view
+- Input validation with helpful error messages
+- Settings review and confirmation screen
+- Progress indicators during processing
+- Configuration persistence
 
 ### 2. File Processor (`src/processors/file-processor.ts`)
 
@@ -623,6 +691,462 @@ Templates can extend base templates:
 ---
 
 ## CLI Interface
+
+### Interactive Mode
+
+When PDF Factory is invoked without any arguments or commands, it launches an **Interactive CLI Mode** that guides users through the PDF generation process using arrow key navigation and text prompts.
+
+**Invocation**:
+```bash
+pdf-factory
+# or
+pdf-factory --interactive
+# or
+pdf-factory -i
+```
+
+#### Interactive Mode Flow
+
+The interactive mode presents a series of menus and prompts to collect all necessary information for PDF generation:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Welcome to PDF Factory                                 │
+│  ─────────────────────────────────────────────────────  │
+│                                                          │
+│  What would you like to do?                             │
+│                                                          │
+│  ❯ Build PDF from single file                          │
+│    Build PDF from directory                             │
+│    Initialize new template                              │
+│    List available templates                             │
+│    View configuration                                   │
+│    Exit                                                 │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### Main Menu Options
+
+1. **Build PDF from single file**
+   - Guides user through single file processing
+   - Prompts for input file, output path, template selection, etc.
+
+2. **Build PDF from directory**
+   - Guides user through directory processing
+   - Prompts for directory path, recursive option, sorting method, etc.
+
+3. **Initialize new template**
+   - Interactive template creation wizard
+   - Prompts for template name, base template, customization options
+
+4. **List available templates**
+   - Displays all available template sets
+   - Allows selection to view details
+
+5. **View configuration**
+   - Shows current configuration
+   - Allows editing configuration values
+
+6. **Exit**
+   - Exits the interactive mode
+
+#### Single File Build Flow
+
+When "Build PDF from single file" is selected:
+
+```
+Step 1: Input File Selection
+┌─────────────────────────────────────────────────────────┐
+│  Select input Markdown file:                            │
+│                                                          │
+│  [Type path or press Enter to browse]                   │
+│  > chapter1.md                                          │
+│                                                          │
+│  [Browse Files]  [Use Current Directory]                │
+└─────────────────────────────────────────────────────────┘
+
+Step 2: Output File
+┌─────────────────────────────────────────────────────────┐
+│  Output PDF file path:                                  │
+│                                                          │
+│  > output/chapter1.pdf                                  │
+│                                                          │
+│  [Use default: chapter1.pdf]                            │
+└─────────────────────────────────────────────────────────┘
+
+Step 3: Template Selection
+┌─────────────────────────────────────────────────────────┐
+│  Select template set:                                   │
+│                                                          │
+│  ❯ default                                              │
+│    academic                                             │
+│    book                                                 │
+│    report                                               │
+│    custom...                                            │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+
+Step 4: Advanced Options
+┌─────────────────────────────────────────────────────────┐
+│  Advanced Options:                                      │
+│                                                          │
+│  ☑ Include cover page                                   │
+│  ☑ Include table of contents                            │
+│  ☐ Verbose output                                       │
+│  ☐ Use custom configuration file                        │
+│                                                          │
+│  [Continue]  [Back]                                     │
+└─────────────────────────────────────────────────────────┘
+
+Step 5: Configuration File (if selected)
+┌─────────────────────────────────────────────────────────┐
+│  Configuration file path:                               │
+│                                                          │
+│  > pdf-factory.config.yaml                              │
+│                                                          │
+│  [Browse]  [Skip]                                       │
+└─────────────────────────────────────────────────────────┘
+
+Step 6: Review and Confirm
+┌─────────────────────────────────────────────────────────┐
+│  Review Settings:                                       │
+│                                                          │
+│  Input:        chapter1.md                              │
+│  Output:       output/chapter1.pdf                      │
+│  Template:     default                                  │
+│  Cover:        Yes                                      │
+│  TOC:          Yes                                      │
+│  Verbose:      No                                       │
+│                                                          │
+│  [Generate PDF]  [Edit Settings]  [Cancel]              │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### Directory Build Flow
+
+When "Build PDF from directory" is selected:
+
+```
+Step 1: Directory Selection
+┌─────────────────────────────────────────────────────────┐
+│  Select directory containing Markdown files:            │
+│                                                          │
+│  [Type path or press Enter to browse]                   │
+│  > ./docs                                               │
+│                                                          │
+│  [Browse Directories]  [Use Current Directory]          │
+└─────────────────────────────────────────────────────────┘
+
+Step 2: Processing Options
+┌─────────────────────────────────────────────────────────┐
+│  Processing Options:                                    │
+│                                                          │
+│  ☑ Process subdirectories recursively                   │
+│                                                          │
+│  File pattern:                                          │
+│  > **/*.md                                              │
+│                                                          │
+│  Sort files by:                                         │
+│  ❯ Name (alphabetical)                                 │
+│    Date (modified date)                                 │
+│    Custom (front matter order)                          │
+│                                                          │
+│  [Continue]  [Back]                                     │
+└─────────────────────────────────────────────────────────┘
+
+Step 3: Ignore Patterns (Optional)
+┌─────────────────────────────────────────────────────────┐
+│  Files/patterns to ignore (comma-separated):            │
+│                                                          │
+│  > node_modules/**, .git/**, draft-*.md                 │
+│                                                          │
+│  [Continue]  [Skip]                                     │
+└─────────────────────────────────────────────────────────┘
+
+Step 4: Output and Template
+┌─────────────────────────────────────────────────────────┐
+│  Output PDF file path:                                  │
+│  > book.pdf                                             │
+│                                                          │
+│  Select template set:                                   │
+│  ❯ default                                              │
+│    academic                                             │
+│    book                                                 │
+│                                                          │
+│  [Continue]  [Back]                                     │
+└─────────────────────────────────────────────────────────┘
+
+Step 5: Preview File List
+┌─────────────────────────────────────────────────────────┐
+│  Files to be processed (5 files found):                 │
+│                                                          │
+│  ✓ docs/chapter1.md                                     │
+│  ✓ docs/chapter2.md                                     │
+│  ✓ docs/chapter3.md                                     │
+│  ✓ docs/appendix/a.md                                   │
+│  ✓ docs/appendix/b.md                                   │
+│                                                          │
+│  [Continue]  [Edit Options]  [Cancel]                   │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### Template Initialization Flow
+
+When "Initialize new template" is selected:
+
+```
+Step 1: Template Name
+┌─────────────────────────────────────────────────────────┐
+│  Template name:                                         │
+│                                                          │
+│  > my-custom-template                                   │
+│                                                          │
+│  [Continue]  [Cancel]                                   │
+└─────────────────────────────────────────────────────────┘
+
+Step 2: Base Template
+┌─────────────────────────────────────────────────────────┐
+│  Select base template to extend:                        │
+│                                                          │
+│  ❯ default (start from scratch)                        │
+│    academic                                             │
+│    book                                                 │
+│    report                                               │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+
+Step 3: Template Directory
+┌─────────────────────────────────────────────────────────┐
+│  Template directory:                                    │
+│                                                          │
+│  > ./templates/my-custom-template                       │
+│                                                          │
+│  [Use default]  [Browse]                                │
+└─────────────────────────────────────────────────────────┘
+
+Step 4: Customization Options
+┌─────────────────────────────────────────────────────────┐
+│  Which templates would you like to customize?           │
+│                                                          │
+│  ☑ Cover                                                │
+│  ☑ Title page                                           │
+│  ☑ Table of contents                                    │
+│  ☐ Header                                               │
+│  ☐ Footer                                               │
+│  ☐ Back cover                                           │
+│  ☐ Front matter                                         │
+│                                                          │
+│  [Create Template]  [Back]                              │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### Interactive Component Interface
+
+**Component**: `src/cli/interactive/interactive-cli.ts`
+
+```typescript
+interface InteractiveCLI {
+  start(): Promise<void>;
+  showMainMenu(): Promise<MainMenuOption>;
+  promptForFile(): Promise<string>;
+  promptForDirectory(): Promise<string>;
+  promptForOutput(defaultPath: string): Promise<string>;
+  selectTemplate(): Promise<string>;
+  promptForOptions(): Promise<BuildOptions>;
+  confirmSettings(settings: BuildSettings): Promise<boolean>;
+  showProgress(message: string): void;
+  showSuccess(message: string, filePath?: string): void;
+  showError(error: Error): void;
+}
+
+interface MainMenuOption {
+  type: 'build-file' | 'build-dir' | 'init-template' | 'list-templates' | 'config' | 'exit';
+}
+
+interface BuildOptions {
+  includeCover: boolean;
+  includeTOC: boolean;
+  verbose: boolean;
+  customConfig?: string;
+  recursive?: boolean;
+  pattern?: string;
+  orderBy?: 'name' | 'date' | 'custom';
+  ignore?: string[];
+}
+
+interface BuildSettings {
+  input: string;
+  output: string;
+  template: string;
+  options: BuildOptions;
+}
+```
+
+#### Interactive UI Components
+
+**Component**: `src/cli/interactive/components/`
+
+1. **Menu Component** (`menu.ts`)
+   - Arrow key navigation
+   - Multi-select support
+   - Search/filter functionality
+
+2. **Prompt Component** (`prompt.ts`)
+   - Text input with validation
+   - File/directory path completion
+   - History support (up/down arrows)
+
+3. **File Browser** (`file-browser.ts`)
+   - Directory navigation
+   - File selection
+   - Filter by extension
+
+4. **Progress Indicator** (`progress.ts`)
+   - Spinner animations
+   - Progress bars
+   - Status messages
+
+5. **Review Screen** (`review.ts`)
+   - Settings display
+   - Editable fields
+   - Confirmation prompts
+
+#### User Experience Features
+
+1. **Keyboard Shortcuts**:
+   - `↑/↓`: Navigate menu options
+   - `Enter`: Select/Confirm
+   - `Esc`: Go back/Cancel
+   - `Tab`: Auto-complete paths
+   - `Ctrl+C`: Exit at any time
+
+2. **Input Validation**:
+   - Real-time validation of file paths
+   - Check file existence before proceeding
+   - Validate output directory permissions
+   - Verify template availability
+
+3. **Auto-completion**:
+   - File path completion (Tab key)
+   - Template name suggestions
+   - Configuration file suggestions
+
+4. **History**:
+   - Remember recently used paths
+   - Quick access to previous selections
+   - Persistent across sessions (optional)
+
+5. **Visual Feedback**:
+   - Color-coded messages (success, error, warning)
+   - Loading indicators during processing
+   - Progress bars for long operations
+   - Clear error messages with suggestions
+
+6. **Contextual Help**:
+   - `?` key shows help for current step
+   - Tooltips for options
+   - Examples for path inputs
+
+#### Implementation Details
+
+**Library**: Use `inquirer` or `prompts` for interactive prompts
+
+**Example Implementation**:
+```typescript
+import inquirer from 'inquirer';
+import { fileTree } from 'inquirer-file-tree-selection-prompt';
+
+inquirer.registerPrompt('file-tree', fileTree);
+
+async function showMainMenu(): Promise<MainMenuOption> {
+  const { action } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'action',
+      message: 'What would you like to do?',
+      choices: [
+        { name: 'Build PDF from single file', value: 'build-file' },
+        { name: 'Build PDF from directory', value: 'build-dir' },
+        { name: 'Initialize new template', value: 'init-template' },
+        { name: 'List available templates', value: 'list-templates' },
+        { name: 'View configuration', value: 'config' },
+        { name: 'Exit', value: 'exit' }
+      ]
+    }
+  ]);
+  
+  return { type: action };
+}
+
+async function promptForFile(): Promise<string> {
+  const { filePath } = await inquirer.prompt([
+    {
+      type: 'file-tree',
+      name: 'filePath',
+      message: 'Select input Markdown file:',
+      onlyShowValid: true,
+      enableGoUpperDirectory: true,
+      root: process.cwd(),
+      validate: (input: string) => {
+        return input.endsWith('.md') || 'Please select a Markdown file';
+      }
+    }
+  ]);
+  
+  return filePath;
+}
+
+async function selectTemplate(): Promise<string> {
+  const templates = await getAvailableTemplates();
+  
+  const { template } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'template',
+      message: 'Select template set:',
+      choices: [
+        ...templates.map(t => ({ name: t, value: t })),
+        { name: 'Custom...', value: 'custom' }
+      ]
+    }
+  ]);
+  
+  if (template === 'custom') {
+    return await promptForCustomTemplate();
+  }
+  
+  return template;
+}
+```
+
+#### Error Handling in Interactive Mode
+
+- **Invalid Input**: Show error message, allow retry
+- **File Not Found**: Suggest similar files, allow browsing
+- **Permission Errors**: Show clear message with fix suggestions
+- **Template Errors**: List available templates, offer to create new one
+- **Processing Errors**: Show detailed error, offer to retry or edit settings
+
+#### Accessibility
+
+- Support for screen readers (where possible in terminal)
+- Clear visual indicators
+- Keyboard-only navigation
+- High contrast mode option
+- Clear error messages
+
+#### Configuration Persistence
+
+Interactive mode can save user preferences:
+- Default template selection
+- Common output directories
+- Preferred options (cover, TOC, etc.)
+- Recent file paths
+
+Saved in: `~/.pdf-factory/interactive-config.json`
+
+---
 
 ### Command: `build`
 
@@ -1260,7 +1784,15 @@ pdf-factory/
 ├── src/
 │   ├── cli/
 │   │   ├── index.ts
-│   │   └── commands/
+│   │   ├── commands/
+│   │   └── interactive/
+│   │       ├── interactive-cli.ts
+│   │       └── components/
+│   │           ├── menu.ts
+│   │           ├── prompt.ts
+│   │           ├── file-browser.ts
+│   │           ├── progress.ts
+│   │           └── review.ts
 │   ├── processors/
 │   │   ├── file-processor.ts
 │   │   └── directory-processor.ts
@@ -1288,6 +1820,10 @@ pdf-factory/
 
 **Core Dependencies**:
 - `commander`: CLI framework
+- `inquirer` or `prompts`: Interactive prompt library
+- `inquirer-file-tree-selection-prompt`: File browser for interactive mode
+- `chalk` or `colors`: Terminal colors and styling
+- `ora`: Spinner and progress indicators
 - `marked` or `markdown-it`: Markdown parser
 - `puppeteer` or `playwright`: PDF generation
 - `handlebars`: Template engine
