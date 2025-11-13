@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      margin: 0;
+      padding: 80px 60px;
+      font-family: 'Georgia', serif;
+      line-height: 1.6;
+    }
+    
+    .title-page {
+      text-align: center;
+      min-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    
+    h1 {
+      font-size: 3em;
+      margin-bottom: 20px;
+      color: #333;
+      font-weight: 700;
+    }
+    
+    .subtitle {
+      font-size: 1.5em;
+      color: #666;
+      margin-bottom: 60px;
+      font-style: italic;
+    }
+    
+    .metadata {
+      margin-top: 80px;
+      font-size: 1.2em;
+      color: #555;
+    }
+    
+    .author {
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+    
+    .date {
+      color: #888;
+    }
+    
+    .version {
+      margin-top: 20px;
+      font-size: 0.9em;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="title-page">
+    <h1>{{title}}</h1>
+    {{#subtitle}}
+    <div class="subtitle">{{subtitle}}</div>
+    {{/subtitle}}
+    <div class="metadata">
+      {{#author}}
+      <div class="author">by {{author}}</div>
+      {{/author}}
+      <div class="date">{{date}}</div>
+      {{#version}}
+      <div class="version">Version {{version}}</div>
+      {{/version}}
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      margin: 0;
+      padding: 60px;
+      font-family: 'Georgia', serif;
+    }
+    
+    .toc-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 40px;
+      color: #333;
+      border-bottom: 3px solid #667eea;
+      padding-bottom: 15px;
+    }
+    
+    .toc-list {
+      list-style: none;
+      padding: 0;
+    }
+    
+    .toc-item {
+      margin: 15px 0;
+      padding: 8px 0;
+      border-bottom: 1px dotted #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    
+    .toc-item.level-1 {
+      font-size: 1.2em;
+      font-weight: 600;
+      margin-left: 0;
+    }
+    
+    .toc-item.level-2 {
+      font-size: 1.1em;
+      margin-left: 20px;
+    }
+    
+    .toc-item.level-3 {
+      font-size: 1em;
+      margin-left: 40px;
+      color: #666;
+    }
+    
+    .toc-title {
+      flex: 1;
+      padding-right: 10px;
+    }
+    
+    .toc-page {
+      font-weight: 400;
+      color: #667eea;
+      white-space: nowrap;
+    }
+    
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+    
+    a:hover .toc-title {
+      color: #667eea;
+    }
+  </style>
+</head>
+<body>
+  <div class="toc-container">
+    <h1>Table of Contents</h1>
+    <ul class="toc-list">
+      {{#items}}
+      <li class="toc-item level-{{level}}">
+        <a href="#{{id}}">
+          <span class="toc-title">{{title}}</span>
+          <span class="toc-page">{{page}}</span>
+        </a>
+      </li>
+      {{/items}}
+    </ul>
+  </div>
+</body>
+</html>
