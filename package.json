@@ -14,7 +14,11 @@
     "markdown",
     "cli",
     "publishing",
-    "html-template"
+    "html-template",
+    "pdf-generation",
+    "markdown-to-pdf",
+    "documentation",
+    "book-publishing"
   ],
   "author": "",
   "license": "Apache-2.0",
