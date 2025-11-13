@@ -1,0 +1,36 @@
+{
+  "name": "pdf-factory",
+  "version": "1.0.0",
+  "description": "A CLI utility to create publish-ready PDFs from Markdown content with HTML-based templating engine",
+  "main": "src/index.js",
+  "bin": {
+    "pdf-factory": "./bin/pdf-factory.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "pdf",
+    "markdown",
+    "cli",
+    "publishing",
+    "html-template",
+    "pdf-generation",
+    "markdown-to-pdf",
+    "documentation",
+    "book-publishing"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "commander": "^14.0.2",
+    "glob": "^11.0.3",
+    "jsdom": "^27.2.0",
+    "markdown-it": "^14.1.0",
+    "marked": "^17.0.0",
+    "pdfkit": "^0.17.2"
+  }
+}
