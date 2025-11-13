@@ -38,7 +38,8 @@ program
         process.exit(1);
       }
       
-      console.log('✓ PDF generated successfully!');
+      console.log('✓ HTML generated successfully!');
+      console.log('  Open the HTML file in a browser and save as PDF');
     } catch (error) {
       console.error('Error:', error.message);
       process.exit(1);

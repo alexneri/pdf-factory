@@ -24,7 +24,6 @@
   "dependencies": {
     "commander": "^14.0.2",
     "glob": "^11.0.3",
-    "html-pdf": "^3.0.1",
     "jsdom": "^27.2.0",
     "markdown-it": "^14.1.0",
     "marked": "^17.0.0",

@@ -1,32 +1,28 @@
 const fs = require('fs');
 const path = require('path');
-const pdf = require('html-pdf');
+
+/**
+ * Save HTML to file
+ */
+function saveHTML(html, outputPath) {
+  fs.writeFileSync(outputPath, html, 'utf-8');
+}
 
 /**
  * Generate PDF from HTML content
+ * Note: This function saves HTML that is optimized for PDF conversion.
+ * Use a browser (File > Print > Save as PDF) or command-line tools like:
+ * - Chrome headless: chrome --headless --print-to-pdf=output.pdf input.html
+ * - wkhtmltopdf: wkhtmltopdf input.html output.pdf
  */
 async function generatePDF(html, outputPath, options = {}) {
-  return new Promise((resolve, reject) => {
-    const pdfOptions = {
-      format: options.format || 'A4',
-      orientation: options.orientation || 'portrait',
-      border: {
-        top: options.marginTop || '20mm',
-        right: options.marginRight || '20mm',
-        bottom: options.marginBottom || '20mm',
-        left: options.marginLeft || '20mm'
-      },
-      ...options.pdfOptions
-    };
-
-    pdf.create(html, pdfOptions).toFile(outputPath, (err, res) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(res);
-      }
-    });
-  });
+  const htmlPath = outputPath.replace(/\.pdf$/, '.html');
+  saveHTML(html, htmlPath);
+  
+  return {
+    html: htmlPath,
+    message: 'HTML generated successfully. Convert to PDF using a browser or command-line tool.'
+  };
 }
 
 /**
@@ -55,13 +51,6 @@ ${sections.map((section, index) => {
   `;
 
   return generatePDF(combinedHtml, outputPath, options);
-}
-
-/**
- * Save HTML to file (useful for debugging or manual conversion)
- */
-function saveHTML(html, outputPath) {
-  fs.writeFileSync(outputPath, html, 'utf-8');
 }
 
 module.exports = {

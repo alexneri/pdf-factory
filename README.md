@@ -176,15 +176,47 @@ my-book/
 
 ## Output Formats
 
-pdf-factory generates two files:
+pdf-factory generates print-ready HTML files that can be easily converted to PDF:
 
-1. **PDF** - The final PDF document (requires phantomjs or can fail gracefully)
-2. **HTML** - Intermediate HTML file (always generated)
+1. **HTML** - Well-formatted, print-optimized HTML (always generated)
 
-The HTML file can be:
-- Opened in a browser and printed to PDF
-- Converted using other tools (wkhtmltopdf, Chrome headless, etc.)
-- Used for preview and debugging
+The HTML can be converted to PDF using:
+
+### Browser Method (Easiest)
+1. Open the HTML file in Chrome, Firefox, or Safari
+2. Press Ctrl+P (or Cmd+P on Mac) to print
+3. Select "Save as PDF" as the destination
+4. Adjust settings if needed (margins, page size)
+5. Save the PDF
+
+### Command-Line Tools
+
+```bash
+# Using Chrome/Chromium headless (recommended)
+chrome --headless --print-to-pdf=output.pdf input.html
+
+# Using wkhtmltopdf
+wkhtmltopdf input.html output.pdf
+
+# Using weasyprint (Python)
+weasyprint input.html output.pdf
+```
+
+## Why HTML Output?
+
+pdf-factory generates HTML instead of direct PDF for several reasons:
+
+1. **Security** - Avoids deprecated packages with security vulnerabilities
+2. **Flexibility** - Use any PDF conversion tool you prefer
+3. **Preview** - Review the output in a browser before converting
+4. **Customization** - Make final tweaks to the HTML if needed
+5. **Quality** - Modern browsers produce high-quality PDFs
+
+The generated HTML is optimized for PDF conversion with:
+- Print-specific CSS styles
+- Proper page breaks
+- Professional typography
+- Clean, semantic markup
 
 ## Requirements
 

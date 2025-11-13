@@ -142,15 +142,10 @@ async function publishDirectory(directory, options = {}) {
   saveHTML(combinedHtml, htmlOutputPath);
   console.log(`✓ HTML saved to: ${htmlOutputPath}`);
   
-  // Generate PDF
-  try {
-    await generatePDF(combinedHtml, outputPath, options);
-    console.log(`✓ PDF saved to: ${outputPath}`);
-  } catch (error) {
-    console.warn('⚠ PDF generation failed, but HTML was saved successfully');
-    console.warn('  You can manually convert the HTML to PDF using a browser or other tools');
-    console.warn('  Error:', error.message);
-  }
+  console.log('\nTo convert to PDF, you can:');
+  console.log('  1. Open the HTML file in a browser and use Print > Save as PDF');
+  console.log('  2. Use Chrome headless: chrome --headless --print-to-pdf=' + outputPath + ' ' + htmlOutputPath);
+  console.log('  3. Use wkhtmltopdf: wkhtmltopdf ' + htmlOutputPath + ' ' + outputPath);
   
   return {
     html: htmlOutputPath,
