@@ -1,0 +1,950 @@
+---
+description: For building web frontends, middleware, and CLI applications using typescript
+alwaysApply: false
+---
+# Web Engineering Best Practices for AI Agents
+
+## Core Web Development Principles
+
+### **TypeScript Excellence**
+
+1. **Modern TypeScript Features**:
+   - Use TypeScript 5.0+ features and syntax
+   - Leverage strict mode configuration for maximum type safety
+   - Use proper type annotations and interfaces
+   - Implement generic types for reusable, type-safe code
+   - Use utility types (`Partial`, `Pick`, `Omit`, `Record`) effectively
+   - Implement proper error handling with `Result` types and custom error classes
+
+2. **Type System Best Practices**:
+   \`\`\`typescript
+   // Strong typing with interfaces
+   interface User {
+     readonly id: string;
+     name: string;
+     email: string;
+     createdAt: Date;
+     preferences: UserPreferences;
+   }
+
+   interface UserPreferences {
+     theme: 'light' | 'dark' | 'auto';
+     notifications: boolean;
+     language: string;
+   }
+
+   // Generic types for API responses
+   interface ApiResponse<T> {
+     data: T;
+     success: boolean;
+     message: string;
+     meta?: {
+       total: number;
+       page: number;
+       limit: number;
+     };
+   }
+
+   // Union types for better type safety
+   type Theme = 'light' | 'dark' | 'auto';
+   type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+
+   // Mapped types for transformations
+   type PartialUser = Partial<User>;
+   type UserUpdate = Pick<User, 'name' | 'email'>;
+   \`\`\`
+
+3. **Advanced TypeScript Patterns**:
+   \`\`\`typescript
+   // Conditional types
+   type ApiResult<T> = T extends string 
+     ? { message: T } 
+     : { data: T };
+
+   // Template literal types
+   type EventName<T extends string> = `on${Capitalize<T>}`;
+
+   // Branded types for better type safety
+   type UserId = string & { readonly brand: unique symbol };
+   type Email = string & { readonly brand: unique symbol };
+
+   // Discriminated unions
+   type LoadingState = 
+     | { status: 'idle' }
+     | { status: 'loading' }
+     | { status: 'success'; data: User[] }
+     | { status: 'error'; error: string };
+   \`\`\`
+
+### **Modern JavaScript/ES6+ Excellence**
+
+1. **ES6+ Features and Patterns**:
+   \`\`\`typescript
+   // Destructuring with types
+   const { id, name, ...rest }: User = userData;
+
+   // Optional chaining and nullish coalescing
+   const userTheme = user?.preferences?.theme ?? 'auto';
+
+   // Async/await with proper error handling
+   async function fetchUserData(id: UserId): Promise<ApiResult<User>> {
+     try {
+       const response = await fetch(`/api/users/${id}`);
+       
+       if (!response.ok) {
+         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+       }
+       
+       const data: ApiResponse<User> = await response.json();
+       return { success: true, data: data.data };
+     } catch (error) {
+       return { 
+         success: false, 
+         error: error instanceof Error ? error.message : 'Unknown error' 
+       };
+     }
+   }
+
+   // Modern array methods with types
+   const activeUsers = users
+     .filter((user): user is User & { isActive: true } => user.isActive)
+     .map(user => ({ ...user, displayName: `${user.name} (${user.email})` }))
+     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+   \`\`\`
+
+### **Frontend Framework Excellence**
+
+1. **React with TypeScript**:
+   \`\`\`typescript
+   // Functional components with proper typing
+   interface UserCardProps {
+     user: User;
+     onEdit?: (user: User) => void;
+     onDelete?: (userId: UserId) => void;
+     className?: string;
+   }
+
+   const UserCard: React.FC<UserCardProps> = ({ 
+     user, 
+     onEdit, 
+     onDelete, 
+     className 
+   }) => {
+     const [isLoading, setIsLoading] = useState<boolean>(false);
+     
+     const handleEdit = useCallback(() => {
+       onEdit?.(user);
+     }, [onEdit, user]);
+
+     const handleDelete = useCallback(async () => {
+       if (!onDelete) return;
+       
+       setIsLoading(true);
+       try {
+         await onDelete(user.id as UserId);
+       } catch (error) {
+         console.error('Failed to delete user:', error);
+       } finally {
+         setIsLoading(false);
+       }
+     }, [onDelete, user.id]);
+
+     return (
+       <div className={`user-card ${className || ''}`}>
+         <h3>{user.name}</h3>
+         <p>{user.email}</p>
+         <div className="actions">
+           <button onClick={handleEdit} disabled={isLoading}>
+             Edit
+           </button>
+           <button 
+             onClick={handleDelete} 
+             disabled={isLoading}
+             className="danger"
+           >
+             {isLoading ? 'Deleting...' : 'Delete'}
+           </button>
+         </div>
+       </div>
+     );
+   };
+
+   // Custom hooks with TypeScript
+   function useUserData(userId: UserId) {
+     const [state, setState] = useState<LoadingState>({ status: 'idle' });
+
+     useEffect(() => {
+       let cancelled = false;
+
+       const fetchData = async () => {
+         setState({ status: 'loading' });
+         
+         try {
+           const result = await fetchUserData(userId);
+           
+           if (cancelled) return;
+           
+           if (result.success) {
+             setState({ status: 'success', data: [result.data] });
+           } else {
+             setState({ status: 'error', error: result.error });
+           }
+         } catch (error) {
+           if (!cancelled) {
+             setState({ 
+               status: 'error', 
+               error: error instanceof Error ? error.message : 'Unknown error' 
+             });
+           }
+         }
+       };
+
+       fetchData();
+
+       return () => {
+         cancelled = true;
+       };
+     }, [userId]);
+
+     return state;
+   }
+   \`\`\`
+
+2. **Vue 3 with TypeScript**:
+   \`\`\`typescript
+   import { defineComponent, ref, computed, onMounted } from 'vue';
+
+   interface UserComponentProps {
+     userId: string;
+   }
+
+   export default defineComponent<UserComponentProps>({
+     name: 'UserComponent',
+     props: {
+       userId: {
+         type: String,
+         required: true
+       }
+     },
+     setup(props) {
+       const user = ref<User | null>(null);
+       const isLoading = ref<boolean>(false);
+       const error = ref<string | null>(null);
+
+       const userDisplayName = computed(() => 
+         user.value ? `${user.value.name} (${user.value.email})` : ''
+       );
+
+       const fetchUser = async () => {
+         isLoading.value = true;
+         error.value = null;
+         
+         try {
+           const result = await userService.getUser(props.userId as UserId);
+           user.value = result;
+         } catch (err) {
+           error.value = err instanceof Error ? err.message : 'Unknown error';
+         } finally {
+           isLoading.value = false;
+         }
+       };
+
+       onMounted(() => {
+         fetchUser();
+       });
+
+       return {
+         user,
+         isLoading,
+         error,
+         userDisplayName,
+         fetchUser
+       };
+     }
+   });
+   \`\`\`
+
+### **Backend Development with Node.js**
+
+1. **Express.js with TypeScript**:
+   \`\`\`typescript
+   import express, { Request, Response, NextFunction } from 'express';
+   import { body, param, validationResult } from 'express-validator';
+
+   interface AuthenticatedRequest extends Request {
+     user?: User;
+   }
+
+   // Middleware with proper typing
+   const authenticateUser = async (
+     req: AuthenticatedRequest, 
+     res: Response, 
+     next: NextFunction
+   ): Promise<void> => {
+     try {
+       const token = req.headers.authorization?.replace('Bearer ', '');
+       
+       if (!token) {
+         res.status(401).json({ error: 'No token provided' });
+         return;
+       }
+
+       const user = await userService.verifyToken(token);
+       req.user = user;
+       next();
+     } catch (error) {
+       res.status(401).json({ error: 'Invalid token' });
+     }
+   };
+
+   // Route handlers with validation
+   const userRoutes = express.Router();
+
+   userRoutes.get(
+     '/users/:id',
+     param('id').isUUID().withMessage('Invalid user ID'),
+     async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+       const errors = validationResult(req);
+       if (!errors.isEmpty()) {
+         res.status(400).json({ errors: errors.array() });
+         return;
+       }
+
+       try {
+         const user = await userService.getUser(req.params.id as UserId);
+         res.json({ success: true, data: user });
+       } catch (error) {
+         res.status(404).json({ 
+           success: false, 
+           error: 'User not found' 
+         });
+       }
+     }
+   );
+   \`\`\`
+
+2. **Database Integration with TypeORM**:
+   \`\`\`typescript
+   import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+
+   @Entity('users')
+   export class UserEntity {
+     @PrimaryGeneratedColumn('uuid')
+     id!: string;
+
+     @Column({ type: 'varchar', length: 255 })
+     name!: string;
+
+     @Column({ type: 'varchar', length: 255, unique: true })
+     email!: string;
+
+     @Column({ type: 'json', nullable: true })
+     preferences?: UserPreferences;
+
+     @CreateDateColumn()
+     createdAt!: Date;
+   }
+
+   // Repository pattern with TypeScript
+   class UserRepository {
+     constructor(private repository: Repository<UserEntity>) {}
+
+     async findById(id: UserId): Promise<User | null> {
+       const entity = await this.repository.findOne({ where: { id } });
+       return entity ? this.mapEntityToUser(entity) : null;
+     }
+
+     async create(userData: UserCreate): Promise<User> {
+       const entity = this.repository.create(userData);
+       const savedEntity = await this.repository.save(entity);
+       return this.mapEntityToUser(savedEntity);
+     }
+
+     private mapEntityToUser(entity: UserEntity): User {
+       return {
+         id: entity.id as UserId,
+         name: entity.name,
+         email: entity.email as Email,
+         createdAt: entity.createdAt,
+         preferences: entity.preferences || { theme: 'auto', notifications: true, language: 'en' }
+       };
+     }
+   }
+   \`\`\`
+
+### **API Design and Development**
+
+1. **Type-safe API Client**:
+   \`\`\`typescript
+   class ApiClient {
+     constructor(private baseUrl: string, private token?: string) {}
+
+     async request<T>(
+       method: HttpMethod,
+       path: string,
+       options: {
+         params?: Record<string, string>;
+         query?: Record<string, unknown>;
+         body?: unknown;
+       } = {}
+     ): Promise<ApiResponse<T>> {
+       const url = new URL(path.replace(/:(\w+)/g, (_, key) => options.params?.[key] || ''), this.baseUrl);
+       
+       if (options.query) {
+         Object.entries(options.query).forEach(([key, value]) => {
+           if (value !== undefined) {
+             url.searchParams.append(key, String(value));
+           }
+         });
+       }
+
+       const headers: HeadersInit = {
+         'Content-Type': 'application/json',
+       };
+
+       if (this.token) {
+         headers.Authorization = `Bearer ${this.token}`;
+       }
+
+       const response = await fetch(url.toString(), {
+         method,
+         headers,
+         body: options.body ? JSON.stringify(options.body) : undefined,
+       });
+
+       if (!response.ok) {
+         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+       }
+
+       return response.json();
+     }
+
+     // Typed methods for each endpoint
+     users = {
+       list: (query?: UserListQuery) => 
+         this.request<User[]>('GET', '/users', { query }),
+       
+       get: (id: UserId) => 
+         this.request<User>('GET', '/users/:id', { params: { id } }),
+       
+       create: (body: UserCreate) => 
+         this.request<User>('POST', '/users', { body }),
+       
+       update: (id: UserId, body: UserUpdate) => 
+         this.request<User>('PUT', '/users/:id', { params: { id }, body }),
+       
+       delete: (id: UserId) => 
+         this.request<void>('DELETE', '/users/:id', { params: { id } })
+     };
+   }
+   \`\`\`
+
+### **Testing Excellence**
+
+1. **Unit Testing with Jest and TypeScript**:
+   \`\`\`typescript
+   describe('UserService', () => {
+     let userService: UserService;
+     let mockRepository: jest.Mocked<UserRepository>;
+
+     beforeEach(() => {
+       mockRepository = {
+         findById: jest.fn(),
+         create: jest.fn(),
+         update: jest.fn(),
+         delete: jest.fn(),
+       } as jest.Mocked<UserRepository>;
+       userService = new UserService(mockRepository);
+     });
+
+     describe('getUser', () => {
+       it('should return user when found', async () => {
+         const userId = 'test-id' as UserId;
+         const expectedUser: User = {
+           id: userId,
+           name: 'John Doe',
+           email: 'john@example.com' as Email,
+           createdAt: new Date(),
+           preferences: { theme: 'light', notifications: true, language: 'en' }
+         };
+         mockRepository.findById.mockResolvedValue(expectedUser);
+
+         const result = await userService.getUser(userId);
+
+         expect(result).toEqual(expectedUser);
+         expect(mockRepository.findById).toHaveBeenCalledWith(userId);
+       });
+
+       it('should throw error when user not found', async () => {
+         const userId = 'non-existent' as UserId;
+         mockRepository.findById.mockResolvedValue(null);
+
+         await expect(userService.getUser(userId)).rejects.toThrow('User not found');
+       });
+     });
+   });
+   \`\`\`
+
+2. **Frontend Testing with React Testing Library**:
+   \`\`\`typescript
+   import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+   import { UserCard } from '../UserCard';
+
+   const mockUser: User = {
+     id: 'test-id' as UserId,
+     name: 'John Doe',
+     email: 'john@example.com' as Email,
+     createdAt: new Date(),
+     preferences: { theme: 'light', notifications: true, language: 'en' }
+   };
+
+   describe('UserCard', () => {
+     it('should render user information', () => {
+       render(<UserCard user={mockUser} />);
+       
+       expect(screen.getByText('John Doe')).toBeInTheDocument();
+       expect(screen.getByText('john@example.com')).toBeInTheDocument();
+     });
+
+     it('should call onEdit when edit button is clicked', () => {
+       const mockOnEdit = jest.fn();
+       render(<UserCard user={mockUser} onEdit={mockOnEdit} />);
+       
+       fireEvent.click(screen.getByText('Edit'));
+       
+       expect(mockOnEdit).toHaveBeenCalledWith(mockUser);
+     });
+
+     it('should handle delete with loading state', async () => {
+       const mockOnDelete = jest.fn().mockResolvedValue(undefined);
+       render(<UserCard user={mockUser} onDelete={mockOnDelete} />);
+       
+       const deleteButton = screen.getByText('Delete');
+       fireEvent.click(deleteButton);
+       
+       expect(screen.getByText('Deleting...')).toBeInTheDocument();
+       
+       await waitFor(() => {
+         expect(mockOnDelete).toHaveBeenCalledWith(mockUser.id);
+         expect(screen.getByText('Delete')).toBeInTheDocument();
+       });
+     });
+   });
+   \`\`\`
+
+### **Performance Optimization**
+
+1. **Frontend Performance**:
+   \`\`\`typescript
+   // Code splitting with React.lazy
+   const LazyUserDashboard = lazy(() => 
+     import('./UserDashboard').then(module => ({ default: module.UserDashboard }))
+   );
+
+   // Memoization for expensive calculations
+   const ExpensiveComponent: React.FC<{ data: LargeDataSet }> = ({ data }) => {
+     const processedData = useMemo(() => {
+       return data.items
+         .filter(item => item.isActive)
+         .map(item => ({
+           ...item,
+           computedValue: expensiveCalculation(item)
+         }))
+         .sort((a, b) => b.computedValue - a.computedValue);
+     }, [data]);
+
+     return (
+       <div>
+         {processedData.map(item => (
+           <ItemCard key={item.id} item={item} />
+         ))}
+       </div>
+     );
+   };
+
+   // Virtual scrolling for large lists
+   import { FixedSizeList as List } from 'react-window';
+
+   const VirtualizedUserList: React.FC<{ users: User[] }> = ({ users }) => {
+     const Row = ({ index, style }: { index: number; style: CSSProperties }) => (
+       <div style={style}>
+         <UserCard user={users[index]} />
+       </div>
+     );
+
+     return (
+       <List
+         height={600}
+         itemCount={users.length}
+         itemSize={100}
+         width="100%"
+       >
+         {Row}
+       </List>
+     );
+   };
+   \`\`\`
+
+2. **Backend Performance**:
+   \`\`\`typescript
+   // Database query optimization
+   class OptimizedUserService {
+     async getUsersWithPagination(
+       page: number = 1, 
+       limit: number = 20
+     ): Promise<{ users: User[]; total: number }> {
+       const offset = (page - 1) * limit;
+       
+       const [users, total] = await Promise.all([
+         this.repository.find({
+           skip: offset,
+           take: limit,
+           order: { createdAt: 'DESC' },
+           select: ['id', 'name', 'email', 'createdAt']
+         }),
+         this.repository.count()
+       ]);
+
+       return { users, total };
+     }
+
+     // Caching with Redis
+     async getCachedUser(id: UserId): Promise<User | null> {
+       const cacheKey = `user:${id}`;
+       const cached = await redis.get(cacheKey);
+       
+       if (cached) {
+         return JSON.parse(cached);
+       }
+
+       const user = await this.repository.findById(id);
+       
+       if (user) {
+         await redis.setex(cacheKey, 3600, JSON.stringify(user));
+       }
+
+       return user;
+     }
+   }
+   \`\`\`
+
+### **Security Best Practices**
+
+1. **Authentication and Authorization**:
+   \`\`\`typescript
+   import jwt from 'jsonwebtoken';
+   import bcrypt from 'bcrypt';
+
+   class AuthService {
+     async hashPassword(password: string): Promise<string> {
+       const saltRounds = 12;
+       return bcrypt.hash(password, saltRounds);
+     }
+
+     async verifyPassword(password: string, hash: string): Promise<boolean> {
+       return bcrypt.compare(password, hash);
+     }
+
+     generateAccessToken(user: User): string {
+       return jwt.sign(
+         { userId: user.id, email: user.email },
+         process.env.JWT_SECRET!,
+         { expiresIn: '15m' }
+       );
+     }
+
+     generateRefreshToken(user: User): string {
+       return jwt.sign(
+         { userId: user.id },
+         process.env.JWT_REFRESH_SECRET!,
+         { expiresIn: '7d' }
+       );
+     }
+
+     verifyToken(token: string): Promise<{ userId: UserId; email: Email }> {
+       return new Promise((resolve, reject) => {
+         jwt.verify(token, process.env.JWT_SECRET!, (err, decoded) => {
+           if (err) {
+             reject(err);
+           } else {
+             resolve(decoded as { userId: UserId; email: Email });
+           }
+         });
+       });
+     }
+   }
+   \`\`\`
+
+2. **Input Validation and Sanitization**:
+   \`\`\`typescript
+   import { body, ValidationChain } from 'express-validator';
+
+   const userValidation: ValidationChain[] = [
+     body('name')
+       .isLength({ min: 1, max: 100 })
+       .withMessage('Name must be between 1 and 100 characters')
+       .trim()
+       .escape(),
+     body('email')
+       .isEmail()
+       .withMessage('Must be a valid email')
+       .normalizeEmail()
+       .custom(async (email) => {
+         const existingUser = await userService.findByEmail(email);
+         if (existingUser) {
+           throw new Error('Email already in use');
+         }
+       }),
+     body('password')
+       .isLength({ min: 8 })
+       .withMessage('Password must be at least 8 characters long')
+       .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+       .withMessage('Password must contain uppercase, lowercase, number and special character')
+   ];
+   \`\`\`
+
+### **State Management**
+
+1. **Modern State Management with Zustand**:
+   \`\`\`typescript
+   import { create } from 'zustand';
+   import { devtools, persist } from 'zustand/middleware';
+
+   interface UserState {
+     currentUser: User | null;
+     users: User[];
+     isLoading: boolean;
+     error: string | null;
+   }
+
+   interface UserActions {
+     setCurrentUser: (user: User | null) => void;
+     setUsers: (users: User[]) => void;
+     addUser: (user: User) => void;
+     updateUser: (id: UserId, updates: Partial<User>) => void;
+     removeUser: (id: UserId) => void;
+     setLoading: (loading: boolean) => void;
+     setError: (error: string | null) => void;
+     fetchUsers: () => Promise<void>;
+   }
+
+   type UserStore = UserState & UserActions;
+
+   export const useUserStore = create<UserStore>()(
+     devtools(
+       persist(
+         (set, get) => ({
+           currentUser: null,
+           users: [],
+           isLoading: false,
+           error: null,
+
+           setCurrentUser: (user) => set({ currentUser: user }),
+           setUsers: (users) => set({ users }),
+           addUser: (user) => set((state) => ({ users: [...state.users, user] })),
+           updateUser: (id, updates) =>
+             set((state) => ({
+               users: state.users.map((user) =>
+                 user.id === id ? { ...user, ...updates } : user
+               ),
+             })),
+           removeUser: (id) =>
+             set((state) => ({
+               users: state.users.filter((user) => user.id !== id),
+             })),
+           setLoading: (isLoading) => set({ isLoading }),
+           setError: (error) => set({ error }),
+
+           fetchUsers: async () => {
+             set({ isLoading: true, error: null });
+             try {
+               const response = await apiClient.users.list();
+               set({ users: response.data, isLoading: false });
+             } catch (error) {
+               set({
+                 error: error instanceof Error ? error.message : 'Unknown error',
+                 isLoading: false,
+               });
+             }
+           },
+         }),
+         {
+           name: 'user-store',
+           partialize: (state) => ({ currentUser: state.currentUser }),
+         }
+       ),
+       { name: 'user-store' }
+     )
+   );
+   \`\`\`
+
+### **Build Tools and Development Workflow**
+
+1. **Modern Build Configuration**:
+   \`\`\`typescript
+   // vite.config.ts
+   import { defineConfig } from 'vite';
+   import react from '@vitejs/plugin-react';
+   import { resolve } from 'path';
+
+   export default defineConfig({
+     plugins: [react()],
+     resolve: {
+       alias: {
+         '@': resolve(__dirname, 'src'),
+         '@components': resolve(__dirname, 'src/components'),
+         '@services': resolve(__dirname, 'src/services'),
+         '@types': resolve(__dirname, 'src/types'),
+       },
+     },
+     build: {
+       rollupOptions: {
+         output: {
+           manualChunks: {
+             vendor: ['react', 'react-dom'],
+             router: ['react-router-dom'],
+             ui: ['@mui/material', '@emotion/react'],
+           },
+         },
+       },
+     },
+     server: {
+       proxy: {
+         '/api': {
+           target: 'http://localhost:8000',
+           changeOrigin: true,
+         },
+       },
+     },
+   });
+   \`\`\`
+
+2. **TypeScript Configuration**:
+   \`\`\`json
+   // tsconfig.json
+   {
+     "compilerOptions": {
+       "target": "ES2022",
+       "lib": ["ES2022", "DOM", "DOM.Iterable"],
+       "allowJs": true,
+       "skipLibCheck": true,
+       "esModuleInterop": true,
+       "allowSyntheticDefaultImports": true,
+       "strict": true,
+       "noImplicitAny": true,
+       "noImplicitReturns": true,
+       "noImplicitThis": true,
+       "noUnusedLocals": true,
+       "noUnusedParameters": true,
+       "exactOptionalPropertyTypes": true,
+       "forceConsistentCasingInFileNames": true,
+       "module": "ESNext",
+       "moduleResolution": "node",
+       "resolveJsonModule": true,
+       "isolatedModules": true,
+       "noEmit": true,
+       "jsx": "react-jsx",
+       "baseUrl": ".",
+       "paths": {
+         "@/*": ["src/*"],
+         "@components/*": ["src/components/*"],
+         "@services/*": ["src/services/*"],
+         "@types/*": ["src/types/*"]
+       }
+     },
+     "include": ["src/**/*"],
+     "exclude": ["node_modules", "dist", "build"]
+   }
+   \`\`\`
+
+### **Error Handling and Monitoring**
+
+1. **Error Boundaries and Global Error Handling**:
+   \`\`\`typescript
+   import React, { Component, ErrorInfo, ReactNode } from 'react';
+
+   interface Props {
+     children: ReactNode;
+     fallback?: ReactNode;
+   }
+
+   interface State {
+     hasError: boolean;
+     error?: Error;
+   }
+
+   class ErrorBoundary extends Component<Props, State> {
+     public state: State = { hasError: false };
+
+     public static getDerivedStateFromError(error: Error): State {
+       return { hasError: true, error };
+     }
+
+     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+       console.error('Uncaught error:', error, errorInfo);
+       
+       if (process.env.NODE_ENV === 'production') {
+         // Report to monitoring service
+         // errorReportingService.reportError(error, errorInfo);
+       }
+     }
+
+     public render() {
+       if (this.state.hasError) {
+         return (
+           this.props.fallback || (
+             <div className="error-boundary">
+               <h2>Something went wrong.</h2>
+               <p>We're sorry, but something unexpected happened.</p>
+               <button onClick={() => window.location.reload()}>
+                 Reload Page
+               </button>
+             </div>
+           )
+         );
+       }
+
+       return this.props.children;
+     }
+   }
+   \`\`\`
+
+### **Code Organization Best Practices**
+
+1. **Project Structure**:
+   \`\`\`
+   src/
+   ├── components/
+   │   ├── ui/           # Reusable UI components
+   │   ├── forms/        # Form components
+   │   └── layout/       # Layout components
+   ├── features/
+   │   ├── auth/
+   │   │   ├── components/
+   │   │   ├── hooks/
+   │   │   ├── services/
+   │   │   └── types/
+   │   └── users/
+   ├── hooks/            # Shared custom hooks
+   ├── services/         # API and external services
+   ├── stores/           # State management
+   ├── types/            # TypeScript type definitions
+   ├── utils/            # Utility functions
+   ├── constants/        # Application constants
+   └── styles/           # Global styles and themes
+   \`\`\`
+
+## When Writing Web Code, Always Include:
+
+1. **Comprehensive Type Safety**: Use TypeScript with strict mode and proper type definitions
+2. **Error Handling**: Implement proper error boundaries, try-catch blocks, and user-friendly error messages
+3. **Performance Optimization**: Use code splitting, memoization, and efficient rendering patterns
+4. **Security Measures**: Implement proper authentication, input validation, and security headers
+5. **Testing Coverage**: Write unit, integration, and end-to-end tests
+6. **Accessibility**: Include proper ARIA labels, keyboard navigation, and screen reader support
+7. **Responsive Design**: Ensure mobile-first, responsive layouts
+8. **SEO Optimization**: Implement proper meta tags, semantic HTML, and performance optimization
+9. **Documentation**: Use JSDoc comments for complex functions and maintain clear README files
+10. **Modern Development Practices**: Follow ESLint rules, use Prettier for formatting, and implement CI/CD pipelines
+
+Remember: Web development requires balancing user experience, performance, security, and maintainability. Always prioritize clean, scalable code that provides excellent user experiences across all devices and platforms.

@@ -1,0 +1,90 @@
+---
+description: Modern Android engineering rules for Kotlin/Compose projects
+globs:
+  - "**/*.kt"
+  - "**/*.kts"
+  - "**/build.gradle"
+  - "**/build.gradle.kts"
+  - "**/settings.gradle"
+  - "**/settings.gradle.kts"
+  - "**/AndroidManifest.xml"
+  - "**/proguard-*.pro"
+  - "**/consumer-rules.pro"
+  - "**/src/**/res/**/*.xml"
+alwaysApply: false
+---
+
+# Android Engineering Rules
+
+AI Persona:
+
+You are a Senior Android Engineer focused on Kotlin, Jetpack Compose, and modern Android architecture. Keep edits minimal and precise. One logical change per commit. Practice TDD. Favor immutability, pure functions, and unidirectional data flow.
+
+Tooling (use latest stable versions supported by Android):
+
+1. JDK: 17 by default (21 only if the project already targets it); configure Gradle toolchains.
+2. Kotlin: latest stable 2.x.
+3. Gradle: latest stable 8.x.
+4. Android Gradle Plugin (AGP): latest stable 8.x compatible with the Gradle version.
+5. compileSdk/targetSdk: use the latest stable Android platform; keep CI images and local SDK in sync. minSdk: 24+ unless product requirements mandate lower.
+6. Jetpack Compose: use the latest Compose BOM and Material 3; avoid pinning individual Compose artifacts outside the BOM.
+
+Recommended libraries:
+
+1. Dependency Injection: Hilt (AndroidX Hilt + Dagger). Keep the Hilt Gradle plugin in sync with AGP.
+2. Concurrency: Kotlin Coroutines with structured concurrency. Inject dispatchers for testability.
+3. Networking: Retrofit 2 + OkHttp 4 + Moshi 1 (or Kotlinx Serialization). Use OkHttp interceptors for logging/auth; configure timeouts and caching.
+4. Persistence: Room (KTX), explicit migrations with tests. DAOs return Flow where appropriate.
+5. Navigation: Navigation Compose.
+6. Background work: WorkManager (KTX) for deferrable tasks.
+7. Images: Coil (Compose).
+8. Compose utilities: Accompanist matching the Compose version.
+
+Testing stack:
+
+1. Unit tests: JUnit 5, Truth (or AssertK), MockK, kotlinx-coroutines-test, Turbine for Flow testing.
+2. Instrumented tests: AndroidX Test, Espresso, Compose UI Test, Hilt testing; use Robolectric for JVM-based Android tests where suitable.
+3. TDD: write a failing test → minimal implementation → refactor → keep tests green.
+
+Architecture & project structure:
+
+1. Clean Architecture with MVVM and unidirectional data flow.
+2. Modules: `app` (presentation), `domain` (pure Kotlin use cases), `data` (repositories, network, db). The `domain` module must not depend on Android.
+3. ViewModel state: expose immutable `UiState` (sealed types) via `StateFlow`. Use `collectAsStateWithLifecycle` in Compose.
+4. Error handling: use sealed result types at repository boundaries; do not leak transport/DB details into domain.
+
+Compose UI guidelines:
+
+1. Prefer Material 3, support dynamic color on Android 12+.
+2. Keep composables small and stateless; hoist state. Use `remember` and `derivedStateOf` judiciously. Use stable, immutable data classes.
+3. Use `LazyColumn`/`LazyGrid` for long lists. Provide accessibility semantics and content descriptions.
+
+Networking & data:
+
+1. Retrofit services use suspend functions. Centralize JSON adapters (Moshi/serialization) and error parsing.
+2. OkHttp: configure TLS, timeouts, caching, and authentication interceptors. Consider certificate pinning when required.
+3. Room: write migration tests. Prefer `@Upsert` where suitable. Expose `Flow` for observability.
+
+Concurrency & background work:
+
+1. Use structured concurrency. Launch work in `viewModelScope` or injected scopes. Avoid `GlobalScope`.
+2. Offload blocking IO to injected `Dispatchers.IO`. Provide dispatchers via DI for testability.
+3. Use WorkManager for deferrable/retryable background tasks; use Foreground Services for long-running user-visible work.
+
+Build & quality gates:
+
+1. Manage versions via Gradle Version Catalogs (`libs.versions.toml`). Prefer BOMs where available (Compose, Firebase).
+2. Enable Kotlin explicit API mode in library modules. Treat warnings as errors in CI.
+3. Static analysis: KtLint and/or Detekt. Maintain a zero-warning policy.
+4. R8/ProGuard: shrink and optimize release builds. Maintain baseline profiles and enable Startup Runtime.
+
+Security & privacy:
+
+1. Use AndroidX Security Crypto for encrypted storage. Store tokens securely and rotate when necessary.
+2. Use `BiometricPrompt` for strong auth when appropriate. Configure Network Security Config and TLS correctly.
+
+General guidelines:
+
+1. One focused change per commit. Prefer intention-revealing names.
+2. Keep functions short and pure where possible. Avoid reflection.
+3. Prefer composition over inheritance. Keep module boundaries strict and testable.

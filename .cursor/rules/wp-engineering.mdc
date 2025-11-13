@@ -1,0 +1,175 @@
+---
+description: Best practices for WordPress engineering (themes, plugins, REST, blocks)
+alwaysApply: false
+---
+# WordPress Engineering Best Practices for AI Agents
+
+## Core Principles
+
+### **PHP & WordPress Coding Standards**
+
+1. **Standards**:
+   - Follow PHP-FIG basics and WordPress Coding Standards (WPCS)
+   - Use full PHP tags `<?php ?>`; avoid short tags and `<?=`.
+   - Prefer snake_case for functions/vars, UpperCamelCase for classes, UPPER_CASE for constants.
+   - Yoda conditions for comparisons when interacting with user input and globals.
+
+2. **Linting & Tools**:
+   - Enforce WPCS via PHPCS. Typical invocation:
+     - `phpcs -p --standard=WordPress --severity=5 --tab-width=4 .`
+   - Configure text domains and prefixes in your ruleset as needed.
+
+3. **Documentation (PHPDoc/JSDoc)**:
+   - Use file, class, function DocBlocks with `@since`, `@param`, `@return`, `@see`.
+   - Document hooks and structured array arguments using hash notation.
+
+### **Security Fundamentals**
+
+- Validate, sanitize, then escape.
+  - Validate: `isset()`, `empty()`, types, schema for REST args.
+  - Sanitize: `sanitize_text_field()`, `sanitize_email()`, `absint()`, `esc_url_raw()`.
+  - Escape on output: `esc_html()`, `esc_attr()`, `esc_url()`, `wp_kses()`.
+- Always use prepared SQL with `$wpdb->prepare()`.
+- Verify nonces on state-changing actions; use `current_user_can()` for capability checks.
+- For REST: specify `permission_callback`, validate/sanitize args with JSON Schema or callbacks.
+
+### **Performance & Reliability**
+
+- Use object cache APIs (`wp_cache_*`) and transients for expensive operations.
+- Avoid `query_posts()`. Use `WP_Query`, `get_posts()`, or REST queries.
+- Lazy-load assets; enqueue only when needed. Split editor vs frontend assets.
+- Cache REST schemas and heavy computations. Avoid unbounded loops/queries.
+
+## Themes (Classic and Block)
+
+### **Structure & Required Files**
+
+- Classic themes: root `style.css` (header), `functions.php`, templates per hierarchy.
+- Block themes: `style.css`, `theme.json`, and `templates/index.html`; template parts in `parts/` or `template-parts/`.
+- Follow template hierarchy; store parts under `template-parts/`.
+
+### **theme.json (Block Themes)**
+
+- Centralize design tokens and UI controls in `theme.json`:
+\`\`\`json
+{
+  "version": 2,
+  "settings": {
+    "color": { "palette": [{ "name": "Primary", "slug": "primary", "color": "#0073aa" }] },
+    "typography": { "fontSizes": [{ "name": "Normal", "slug": "normal", "size": "16px" }] },
+    "layout": { "contentSize": "650px", "wideSize": "1200px" }
+  }
+}
+\`\`\`
+- Prefer theme.json for styles over custom CSS where possible.
+
+### **Assets & Features**
+
+- Enqueue properly in `wp_enqueue_scripts`/`enqueue_block_assets`:
+\`\`\`php
+add_action( 'wp_enqueue_scripts', function () {
+	wp_enqueue_style( 'theme-style', get_stylesheet_uri(), [], null );
+	wp_enqueue_script( 'theme-frontend', get_template_directory_uri() . '/assets/js/app.js', [], null, true );
+} );
+\`\`\`
+- Declare supports in `after_setup_theme()` (title-tag, post-thumbnails, html5, etc.).
+- For per-block styles use `wp_enqueue_block_style()` or block `style` assets.
+
+## Plugins
+
+### **Structure & Naming**
+
+- Prefix everything to avoid globals collision (functions, classes, hooks, options): `yourprefix_`.
+- Organize by domain (admin, public, REST, CLI). One class/interface per file where OOP is used.
+
+### **Activation & Uninstall**
+
+- Use activation/deactivation hooks sparingly; verify environment and versions.
+- Clean up on uninstall via `uninstall.php` or `register_uninstall_hook()`.
+
+### **Internationalization (i18n)**
+
+- Wrap user-facing strings with `__()`, `_e()`, `_n()`, `_x()` and include a text domain.
+- Load text domain on init or plugin load; keep translator comments for placeholders.
+
+## REST API
+
+- Register routes with schema, args, and permissions:
+\`\`\`php
+add_action( 'rest_api_init', function () {
+	register_rest_route( 'my-namespace/v1', '/items/(?P<id>\d+)', [
+		'methods'  => WP_REST_Server::READABLE,
+		'callback' => 'my_prefix_get_item',
+		'permission_callback' => function () { return current_user_can( 'read' ); },
+		'args' => [
+			'id' => [ 'type' => 'integer', 'required' => true ],
+		],
+	] );
+} );
+
+function my_prefix_get_item( WP_REST_Request $request ) {
+	$id = (int) $request['id'];
+	$data = [ 'id' => $id ]; // fetch domain data
+	return rest_ensure_response( $data );
+}
+\`\`\`
+- Use `register_post_meta(..., [ 'show_in_rest' => true, 'type' => ... ])` for meta exposure.
+- Prefer schema-based `validate_callback`/`sanitize_callback` or built-ins; return `WP_Error` for failures.
+
+## Blocks (Gutenberg)
+
+- Define blocks with `block.json`; build with `@wordpress/scripts`.
+- Keep private editor APIs internal; avoid depending on unstable/private APIs in themes/plugins.
+- Separate editor and frontend assets; avoid heavy logic in render callbacks without caching.
+
+## Database & Data Access
+
+- Use core APIs (options, meta, terms, posts) before direct SQL.
+- When needed, only use `$wpdb->prepare()` queries; never interpolate.
+- Migrate data incrementally; add indexes where appropriate; avoid unbounded `get_posts()`.
+
+## Admin UX & Accessibility
+
+- Use Settings API for admin pages; nonce-protect forms.
+- Follow accessibility best practices; test with keyboard and screen readers.
+- Respect roles/capabilities; hide UI when not permitted.
+
+## Testing & Tooling
+
+- Unit/integration tests with PHPUnit and WP test suite (`wp scaffold plugin-tests`).
+- Lint PHP with PHPCS (WPCS), JS with ESLint; run in CI.
+- For CLI tasks, prefer WP-CLI commands; provide idempotent operations.
+
+## Common Code Patterns
+
+### **Escaping and Translating**
+\`\`\`php
+printf( esc_html__( 'Hello, %s', 'your-text-domain' ), esc_html( $name ) );
+\`\`\`
+
+### **Prepared SQL**
+\`\`\`php
+global $wpdb;
+$sql = $wpdb->prepare( "SELECT post_title FROM {$wpdb->posts} WHERE ID = %d", $post_id );
+$title = $wpdb->get_var( $sql );
+\`\`\`
+
+### **Nonce Verification**
+\`\`\`php
+if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( $_POST['_wpnonce'], 'action' ) ) {
+	wp_die( esc_html__( 'Invalid request.', 'your-text-domain' ) );
+}
+\`\`\`
+
+## Do/Don’t Checklist
+
+- Do: sanitize input, escape output, check capabilities, verify nonces.
+- Do: enqueue assets via hooks; localize data via `wp_localize_script()` when needed.
+- Don’t: echo unsanitized user input, run direct queries without prepare, or modify globals without prefixes.
+- Don’t: load assets on every page if only needed in specific screens/routes.
+
+## References
+
+- WordPress Handbooks (Core, Themes, Plugins, REST, Block Editor)
+- WordPress Coding Standards (WPCS) for PHPCS
+- WP-CLI Handbook for automation and testing
