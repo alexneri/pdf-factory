@@ -692,6 +692,16 @@ Templates can extend base templates:
 
 ## CLI Interface
 
+### Installation and Global Usage
+
+PDF Factory is distributed as an npm package and is intended to be installed globally so the `pdf-factory` command can be invoked from any working directory. Run:
+
+```
+npm i -g pdf-factory
+```
+
+This installs the CLI into your global npm bin directory, adds the executable to your system path, and allows you to run `pdf-factory`, `pdf-factory build`, or any other command from any folder—no repository checkout required. After installation, verify availability with `pdf-factory --version` or `pdf-factory help`.
+
 ### Interactive Mode
 
 When PDF Factory is invoked without any arguments or commands, it launches an **Interactive CLI Mode** that guides users through the PDF generation process using arrow key navigation and text prompts.

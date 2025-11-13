@@ -1,0 +1,11 @@
+<li class="toc-level-{{level}}">
+  <a href="#{{anchor}}">{{title}}</a>
+  {{#if children}}
+    <ul>
+      {{#each children}}
+        {{> toc-entry}}
+      {{/each}}
+    </ul>
+  {{/if}}
+</li>
+

@@ -1,0 +1,10 @@
+<div class="title">
+  <h1>{{document.title}}</h1>
+  {{#if document.author}}
+    <p>By {{document.author}}</p>
+  {{/if}}
+  {{#if document.date}}
+    <p>{{formatDate document.date}}</p>
+  {{/if}}
+</div>
+

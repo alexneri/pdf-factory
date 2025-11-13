@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>{{document.title}}</title>
+    {{#if styles}}
+      <style>
+        {{{styles}}}
+      </style>
+    {{/if}}
+  </head>
+  <body>
+    {{#if options.includeCover}}
+      <section class="page cover-page">
+        {{> cover}}
+      </section>
+    {{/if}}
+
+    <section class="page title-page">
+      {{> title}}
+    </section>
+
+    {{#if options.includeTOC}}
+      <section class="page toc-page">
+        {{> toc}}
+      </section>
+    {{/if}}
+
+    {{#if document.frontMatter }}
+      <section class="page front-matter-page">
+        {{> front-matter}}
+      </section>
+    {{/if}}
+
+    <main class="page main-content">
+      <header class="document-header">
+        {{> header}}
+      </header>
+      <article class="document-body">
+        {{{document.content}}}
+      </article>
+      <footer class="document-footer">
+        {{> footer}}
+      </footer>
+    </main>
+
+    <section class="page back-cover-page">
+      {{> back-cover}}
+    </section>
+  </body>
+</html>
+

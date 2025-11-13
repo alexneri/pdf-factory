@@ -1,0 +1,82 @@
+{
+  "name": "pdf-factory",
+  "version": "0.3",
+  "description": "A CLI utility to create publish-ready PDFs from Markdown content with HTML-based templating engine",
+  "main": "dist/cli/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "bin": {
+    "pdf-factory": "dist/cli/index.js"
+  },
+  "scripts": {
+    "dev": "tsx src/cli/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepare": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexneri/pdf-factory.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/alexneri/pdf-factory/issues"
+  },
+  "homepage": "https://github.com/alexneri/pdf-factory#readme",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^14.0.2",
+    "fs-extra": "^11.3.2",
+    "glob": "^11.0.3",
+    "gray-matter": "^4.0.3",
+    "handlebars": "^4.7.8",
+    "highlight.js": "^11.11.1",
+    "inquirer": "^9.3.8",
+    "inquirer-file-tree-selection-prompt": "^2.0.5",
+    "js-yaml": "^4.1.1",
+    "markdown-it": "^14.1.0",
+    "markdown-it-anchor": "^9.2.0",
+    "markdown-it-footnote": "^4.0.0",
+    "markdown-it-link-attributes": "^4.0.1",
+    "markdown-it-task-lists": "^2.1.1",
+    "ora": "^9.0.0",
+    "puppeteer": "^24.30.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/glob": "^8.1.0",
+    "@types/handlebars": "^4.0.40",
+    "@types/highlight.js": "^9.12.4",
+    "@types/inquirer": "^9.0.9",
+    "@types/js-yaml": "^4.0.9",
+    "@types/markdown-it": "^14.1.2",
+    "@types/node": "^24.10.1",
+    "@typescript-eslint/eslint-plugin": "^8.46.4",
+    "@typescript-eslint/parser": "^8.46.4",
+    "@vitest/coverage-v8": "^4.0.8",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-import": "^2.32.0",
+    "globals": "^16.5.0",
+    "prettier": "^3.6.2",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.8"
+  }
+}

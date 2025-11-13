@@ -1,0 +1,23 @@
+<div class="front-matter">
+  {{#if document.frontMatter.dedication}}
+    <section>
+      <h3>Dedication</h3>
+      <p>{{document.frontMatter.dedication}}</p>
+    </section>
+  {{/if}}
+
+  {{#if document.frontMatter.acknowledgments}}
+    <section>
+      <h3>Acknowledgments</h3>
+      <p>{{document.frontMatter.acknowledgments}}</p>
+    </section>
+  {{/if}}
+
+  {{#if document.frontMatter.preface}}
+    <section>
+      <h3>Preface</h3>
+      {{{document.frontMatter.preface}}}
+    </section>
+  {{/if}}
+</div>
+

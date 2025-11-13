@@ -1,0 +1,13 @@
+<div class="cover">
+  <h1>{{document.title}}</h1>
+  {{#if document.frontMatter.subtitle}}
+    <p class="subtitle">{{document.frontMatter.subtitle}}</p>
+  {{/if}}
+  {{#if document.author}}
+    <p class="author">{{document.author}}</p>
+  {{/if}}
+  {{#if document.date}}
+    <p class="date">{{formatDate document.date}}</p>
+  {{/if}}
+</div>
+

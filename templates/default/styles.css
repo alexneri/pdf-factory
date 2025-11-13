@@ -1,0 +1,91 @@
+:root {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  color: #222;
+  line-height: 1.6;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.page {
+  page-break-after: always;
+  padding: 2.5cm 2cm;
+  box-sizing: border-box;
+}
+
+.cover-page {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.cover-page h1 {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  font-size: 1.5rem;
+  opacity: 0.85;
+}
+
+.title-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.table-of-contents ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.table-of-contents li {
+  margin-bottom: 0.25rem;
+}
+
+.table-of-contents a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.document-header,
+.document-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.document-body {
+  margin-top: 1rem;
+}
+
+.document-body h1,
+.document-body h2,
+.document-body h3 {
+  margin-top: 2rem;
+}
+
+pre {
+  background: #f5f5f5;
+  padding: 1rem;
+  overflow: auto;
+}
+
+code {
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.back-cover {
+  text-align: center;
+  margin-top: 4rem;
+}
+
