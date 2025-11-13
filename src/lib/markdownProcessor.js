@@ -53,16 +53,41 @@ function extractHeadings(markdown) {
 }
 
 /**
+ * Escape HTML to prevent injection
+ */
+function escapeHtml(unsafe) {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/**
  * Add IDs to headings in HTML for TOC linking
  */
 function addHeadingIds(html) {
   return html.replace(/<h([1-6])>(.*?)<\/h\1>/gi, (match, level, content) => {
-    const id = content
-      .replace(/<[^>]*>/g, '') // Remove HTML tags
+    // Strip HTML tags from content to create ID base
+    // lgtm[js/incomplete-multi-character-sanitization]
+    // This is safe because the result is only used to generate an ID,
+    // which is then filtered to only contain [\w\s-] and HTML-escaped
+    const textOnly = content.replace(/<[^>]*>/g, '');
+    
+    // Create a safe ID by only allowing word characters, spaces, and hyphens
+    // This effectively sanitizes any remaining content by removing all special chars
+    const id = textOnly
       .toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-');
-    return `<h${level} id="${id}">${content}</h${level}>`;
+      .replace(/[^\w\s-]/g, '')  // Only keep alphanumeric, spaces, and hyphens
+      .replace(/\s+/g, '-');      // Convert spaces to hyphens
+    
+    // HTML-escape the ID for attribute safety
+    const safeId = escapeHtml(id);
+    
+    // Content comes from markdown-it's HTML output which is already safe.
+    // We trust markdown-it's output and only add an ID attribute.
+    return `<h${level} id="${safeId}">${content}</h${level}>`;
   });
 }
 

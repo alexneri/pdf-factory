@@ -9,17 +9,34 @@ function renderTemplate(template, data) {
   let result = template;
   
   // Handle conditional blocks {{#key}}...{{/key}}
-  const conditionalRegex = /\{\{#(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g;
-  result = result.replace(conditionalRegex, (match, key, content) => {
+  // Process iteratively to avoid ReDoS
+  while (true) {
+    const startMatch = result.match(/\{\{#(\w+)\}\}/);
+    if (!startMatch) break;
+    
+    const key = startMatch[1];
+    const startPos = startMatch.index;
+    const endTag = `{{/${key}}}`;
+    const endPos = result.indexOf(endTag, startPos);
+    
+    if (endPos === -1) break; // No matching end tag
+    
+    const contentStart = startPos + startMatch[0].length;
+    const content = result.substring(contentStart, endPos);
+    
     const value = data[key];
-    if (value === undefined || value === null || value === false || value === '') {
-      return '';
+    let replacement = '';
+    
+    if (value !== undefined && value !== null && value !== false && value !== '') {
+      if (Array.isArray(value)) {
+        replacement = value.map(item => renderTemplate(content, item)).join('');
+      } else {
+        replacement = renderTemplate(content, data);
+      }
     }
-    if (Array.isArray(value)) {
-      return value.map(item => renderTemplate(content, item)).join('');
-    }
-    return renderTemplate(content, data);
-  });
+    
+    result = result.substring(0, startPos) + replacement + result.substring(endPos + endTag.length);
+  }
   
   // Handle simple variable substitution {{key}}
   const variableRegex = /\{\{(\w+)\}\}/g;
